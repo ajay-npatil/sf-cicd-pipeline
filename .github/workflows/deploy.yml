@@ -1,0 +1,44 @@
+name: Salesforce CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate-or-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: npm install --global @salesforce/cli
+
+      - name: Write JWT key to file
+        run: echo "${{ secrets.SF_JWT_KEY }}" > server.key
+
+      - name: Authenticate to target org
+        run: |
+          sf org login jwt \
+            --username ${{ secrets.SF_USERNAME }} \
+            --jwt-key-file server.key \
+            --client-id ${{ secrets.SF_CONSUMER_KEY }} \
+            --instance-url ${{ secrets.SF_INSTANCE_URL }} \
+            --alias targetOrg \
+            --set-default
+
+      # PR opened/updated → validate only, don't actually deploy
+      - name: Validate deployment (dry run)
+        if: github.event_name == 'pull_request'
+        run: sf project deploy start --target-org targetOrg --dry-run --test-level RunLocalTests
+
+      # Merged to main → real deploy
+      - name: Deploy to target org
+        if: github.event_name == 'push'
+        run: sf project deploy start --target-org targetOrg --test-level RunLocalTests
+
+      - name: Clean up key file
+        if: always()
+        run: rm -f server.key
