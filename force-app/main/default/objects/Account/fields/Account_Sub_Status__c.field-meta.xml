@@ -3,7 +3,7 @@
     <fullName>Account_Sub_Status__c</fullName>
     <externalId>false</externalId>
     <label>Account Sub-Status</label>
-    <length>20</length>
+    <length>30</length>
     <required>false</required>
     <trackFeedHistory>false</trackFeedHistory>
     <type>Text</type>
